@@ -1,0 +1,66 @@
+name: Build libbox.aar
+
+on:
+  workflow_dispatch:
+    inputs:
+      sing_box_ref:
+        description: 'sing-box tag to build (pin a stable release, not an alpha)'
+        required: true
+        default: 'v1.13.13'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sing-box
+        uses: actions/checkout@v4
+        with:
+          repository: SagerNet/sing-box
+          ref: ${{ github.event.inputs.sing_box_ref }}
+          path: sing-box
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: sing-box/go.mod
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: |
+          echo "y" | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;26.1.10909125"
+          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> "$GITHUB_ENV"
+
+      - name: Install gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: gomobile init
+        working-directory: sing-box
+        run: gomobile init
+
+      - name: Build libbox.aar
+        working-directory: sing-box
+        run: go run ./cmd/internal/build_libbox
+
+      - name: Locate built AAR
+        working-directory: sing-box
+        run: |
+          find . -name "*.aar" -exec cp {} libbox.aar \; -quit
+          ls -la libbox.aar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libbox-${{ github.event.inputs.sing_box_ref }}
+          path: sing-box/libbox.aar
+          retention-days: 30
