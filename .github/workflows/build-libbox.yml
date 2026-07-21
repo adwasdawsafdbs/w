@@ -48,23 +48,31 @@ jobs:
         working-directory: sing-box
         run: gomobile init
 
+      - name: Patch default build tags (drop with_naive_outbound / with_tailscale)
+        working-directory: sing-box
+        run: |
+          FILES=$(grep -rl "with_naive_outbound" --include="*.go" . || true)
+          echo "Files containing with_naive_outbound: $FILES"
+          for f in $FILES; do
+            sed -i \
+              -e 's/with_naive_outbound,//g' \
+              -e 's/,with_naive_outbound//g' \
+              -e 's/"with_naive_outbound"//g' \
+              -e 's/with_tailscale,//g' \
+              -e 's/,with_tailscale//g' \
+              -e 's/"with_tailscale"//g' \
+              "$f"
+          done
+
       - name: Build libbox.aar
         working-directory: sing-box
-        env:
-          GOFLAGS: "-checklinkname=0 -buildvcs=false"
-        run: |
-          gomobile bind -v -target=android -androidapi=21 \
-            -tags "with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0" \
-            -ldflags "-X github.com/sagernet/sing-box/constant.Version=${{ github.event.inputs.sing_box_ref }} -s -w" \
-            -trimpath \
-            -javapkg io.nekohasekai.libbox \
-            -libname libbox \
-            -o libbox.aar \
-            ./experimental/libbox
+        run: go run ./cmd/internal/build_libbox -target android
 
-      - name: Verify built AAR
+      - name: Locate built AAR
         working-directory: sing-box
-        run: ls -la libbox.aar
+        run: |
+          find . -name "*.aar" -exec cp {} libbox.aar \; -quit
+          ls -la libbox.aar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
