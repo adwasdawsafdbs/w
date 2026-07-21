@@ -50,13 +50,18 @@ jobs:
 
       - name: Build libbox.aar
         working-directory: sing-box
-        run: go run ./cmd/internal/build_libbox
-
-      - name: Locate built AAR
-        working-directory: sing-box
         run: |
-          find . -name "*.aar" -exec cp {} libbox.aar \; -quit
-          ls -la libbox.aar
+          gomobile bind -v -target=android -androidapi=21 \
+            -tags "with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0" \
+            -ldflags "-X github.com/sagernet/sing-box/constant.Version=${{ github.event.inputs.sing_box_ref }} -s -w" \
+            -javapkg io.nekohasekai.libbox \
+            -libname libbox \
+            -o libbox.aar \
+            ./experimental/libbox
+
+      - name: Verify built AAR
+        working-directory: sing-box
+        run: ls -la libbox.aar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
