@@ -54,6 +54,9 @@ jobs:
           gomobile bind -v -target=android -androidapi=21 \
             -tags "with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0" \
             -ldflags "-X github.com/sagernet/sing-box/constant.Version=${{ github.event.inputs.sing_box_ref }} -s -w" \
+            -checklinkname=0 \
+            -trimpath \
+            -buildvcs=false \
             -javapkg io.nekohasekai.libbox \
             -libname libbox \
             -o libbox.aar \
