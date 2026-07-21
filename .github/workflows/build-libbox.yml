@@ -48,21 +48,13 @@ jobs:
         working-directory: sing-box
         run: gomobile init
 
-      - name: Patch default build tags (drop with_naive_outbound / with_tailscale)
+      - name: Show build_libbox tag list (for inspection)
         working-directory: sing-box
         run: |
-          FILES=$(grep -rl "with_naive_outbound" --include="*.go" . || true)
-          echo "Files containing with_naive_outbound: $FILES"
-          for f in $FILES; do
-            sed -i \
-              -e 's/with_naive_outbound,//g' \
-              -e 's/,with_naive_outbound//g' \
-              -e 's/"with_naive_outbound"//g' \
-              -e 's/with_tailscale,//g' \
-              -e 's/,with_tailscale//g' \
-              -e 's/"with_tailscale"//g' \
-              "$f"
-          done
+          echo "--- build_libbox/main.go ---"
+          cat -n cmd/internal/build_libbox/main.go
+          echo "--- searching whole repo for with_naive_outbound ---"
+          grep -rn "with_naive_outbound" --include="*.go" . || true
 
       - name: Build libbox.aar
         working-directory: sing-box
