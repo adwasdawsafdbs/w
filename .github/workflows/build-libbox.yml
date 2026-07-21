@@ -48,13 +48,12 @@ jobs:
         working-directory: sing-box
         run: gomobile init
 
-      - name: Show build_libbox tag list (for inspection)
+      - name: Patch out with_naive_outbound (pulls in a cronet .a that doesn't link on this NDK/lld)
         working-directory: sing-box
         run: |
-          echo "--- build_libbox/main.go ---"
-          cat -n cmd/internal/build_libbox/main.go
-          echo "--- searching whole repo for with_naive_outbound ---"
-          grep -rn "with_naive_outbound" --include="*.go" . || true
+          sed -i 's/"with_naive_outbound", //' cmd/internal/build_libbox/main.go
+          echo "--- patched line 66 ---"
+          sed -n '66p' cmd/internal/build_libbox/main.go
 
       - name: Build libbox.aar
         working-directory: sing-box
@@ -63,8 +62,8 @@ jobs:
       - name: Locate built AAR
         working-directory: sing-box
         run: |
-          find . -name "*.aar" -exec cp {} libbox.aar \; -quit
-          ls -la libbox.aar
+          ls -la *.aar
+          cp libbox.aar libbox.aar.bak || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
